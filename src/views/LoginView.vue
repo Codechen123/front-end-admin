@@ -4,51 +4,56 @@
             <form @submit.prevent="handleLogin" autocomplete="off">
                 <h2>运动姿态评估管理系统</h2>
                 <div class="inputBox">
-                    <input v-model="username" type="text" required>
-                    <span>用户名</span>
+                    <input v-model="userPhoneNumber" type="text" required />
+                    <span>电话号码</span>
                     <i></i>
                 </div>
                 <div class="inputBox">
-                    <input v-model="password" type="password" required>
+                    <input v-model="password" type="password" required />
                     <span>密码</span>
                     <i></i>
                 </div>
                 <div class="links">
-                    <span>用户名: admin</span>
+                    <span>电话号码: 12345</span>
                     <span>密码: 54321</span>
                 </div>
-                <input type="submit" value="登录">
+                <input type="submit" value="登录" />
             </form>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-
 import axios from 'axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 
-const username = ref('');
+const userPhoneNumber = ref('');
 const password = ref('');
 const router = useRouter();
 
 const handleLogin = async () => {
     try {
-        const response = await axios.post('/api/login', {
-            username: username.value,
-            password: password.value
+        const response = await axios.post('/start/login', {
+            userPhoneNumber: userPhoneNumber.value,
+            password: password.value,
         });
 
         if (response.data.code === 0) {
-            alert('登录成功');
-            router.push('/home');
+            const token = response.data.token; // 获取后端返回的 token
+            if (token) {
+                localStorage.setItem('token', token); // 将 token 存储在 localStorage 中
+                ElMessage.success('登录成功'); // 使用 ElMessage 显示成功信息
+                router.push('/home'); // 跳转到主页或其他页面
+            } else {
+                ElMessage.error('登录失败，未收到令牌');
+            }
         } else {
-            alert(response.data.message || '用户名或密码错误');
+            ElMessage.error(response.data.message || '用户名或密码错误');
         }
     } catch (error) {
-        alert('登录失败，请稍后再试');
-        console.error(error);
+        ElMessage.error('登录失败，请稍后再试');
     }
 };
 </script>
@@ -198,7 +203,7 @@ h2 {
     text-decoration: beige;
 }
 
-input[type="submit"] {
+input[type='submit'] {
     border: none;
     outline: none;
     padding: 11px 25px;
@@ -210,7 +215,7 @@ input[type="submit"] {
     margin-top: 10px;
 }
 
-input[type="submit"]:active {
+input[type='submit']:active {
     opacity: 0.8;
 }
 </style>

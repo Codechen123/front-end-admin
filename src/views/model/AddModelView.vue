@@ -5,77 +5,35 @@
                 <Aside />
             </el-aside>
             <el-main>
+                <h1>添加管理</h1>
+                <br />
 
-                <el-form ref="ruleFormRef" style="max-width: 600px" :model="ruleForm" :rules="rules" label-width="auto"
-                    class="demo-ruleForm" :size="formSize" status-icon>
-                    <el-form-item label="Activity name" prop="name">
-                        <el-input v-model="ruleForm.name" />
+                <el-form style="max-width: 600px" :model="form" :rules="rules" ref="formRef" label-width="120px">
+                    <el-form-item label="模型名称" prop="modelName">
+                        <el-input v-model="form.modelName" placeholder="请输入模型名称"></el-input>
                     </el-form-item>
-                    <el-form-item label="Activity zone" prop="region">
-                        <el-select v-model="ruleForm.region" placeholder="Activity zone">
-                            <el-option label="Zone one" value="shanghai" />
-                            <el-option label="Zone two" value="beijing" />
-                        </el-select>
+
+                    <el-form-item label="模型类型" prop="modelType">
+                        <el-input v-model="form.modelType" placeholder="请输入模型类型"></el-input>
                     </el-form-item>
-                    <el-form-item label="Activity count" prop="count">
-                        <el-select-v2 v-model="ruleForm.count" placeholder="Activity count" :options="options" />
+
+                    <el-form-item label="模型版本" prop="modelVersion">
+                        <el-input v-model="form.modelVersion" placeholder="请输入模型版本"></el-input>
                     </el-form-item>
-                    <el-form-item label="Activity time" required>
-                        <el-col :span="11">
-                            <el-form-item prop="date1">
-                                <el-date-picker v-model="ruleForm.date1" type="date" aria-label="Pick a date"
-                                    placeholder="Pick a date" style="width: 100%" />
-                            </el-form-item>
-                        </el-col>
-                        <el-col class="text-center" :span="2">
-                            <span class="text-gray-500">-</span>
-                        </el-col>
-                        <el-col :span="11">
-                            <el-form-item prop="date2">
-                                <el-time-picker v-model="ruleForm.date2" aria-label="Pick a time"
-                                    placeholder="Pick a time" style="width: 100%" />
-                            </el-form-item>
-                        </el-col>
+
+                    <el-form-item label="上传模型文件" prop="modelFile">
+                        <el-upload :action="null" :auto-upload="false" v-model:file-list="fileList"
+                            :before-upload="beforeUpload" :on-change="handleChange" :limit="1" list-type="text">
+                            <el-button>点击上传</el-button>
+                            <div slot="tip" class="el-upload__tip">只支持上传一个模型文件</div>
+                        </el-upload>
                     </el-form-item>
-                    <el-form-item label="Instant delivery" prop="delivery">
-                        <el-switch v-model="ruleForm.delivery" />
-                    </el-form-item>
-                    <el-form-item label="Activity location" prop="location">
-                        <el-segmented v-model="ruleForm.location" :options="locationOptions" />
-                    </el-form-item>
-                    <el-form-item label="Activity type" prop="type">
-                        <el-checkbox-group v-model="ruleForm.type">
-                            <el-checkbox value="Online activities" name="type">
-                                Online activities
-                            </el-checkbox>
-                            <el-checkbox value="Promotion activities" name="type">
-                                Promotion activities
-                            </el-checkbox>
-                            <el-checkbox value="Offline activities" name="type">
-                                Offline activities
-                            </el-checkbox>
-                            <el-checkbox value="Simple brand exposure" name="type">
-                                Simple brand exposure
-                            </el-checkbox>
-                        </el-checkbox-group>
-                    </el-form-item>
-                    <el-form-item label="Resources" prop="resource">
-                        <el-radio-group v-model="ruleForm.resource">
-                            <el-radio value="Sponsorship">Sponsorship</el-radio>
-                            <el-radio value="Venue">Venue</el-radio>
-                        </el-radio-group>
-                    </el-form-item>
-                    <el-form-item label="Activity form" prop="desc">
-                        <el-input v-model="ruleForm.desc" type="textarea" />
-                    </el-form-item>
+
                     <el-form-item>
-                        <el-button type="primary" @click="submitForm(ruleFormRef)">
-                            Create
-                        </el-button>
-                        <el-button @click="resetForm(ruleFormRef)">Reset</el-button>
+                        <el-button type="primary" @click="onSubmit">提交</el-button>
+                        <el-button @click="onReset">重置</el-button>
                     </el-form-item>
                 </el-form>
-
             </el-main>
         </el-container>
     </div>
@@ -83,125 +41,99 @@
 
 <script lang="ts" setup>
 import Aside from '@/components/Aside.vue';
-import { reactive, ref } from 'vue'
-import type { ComponentSize, FormInstance, FormRules } from 'element-plus'
+import { reactive, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import axios from '@/stores/axios';
 
-interface RuleForm {
-    name: string
-    region: string
-    count: string
-    date1: string
-    date2: string
-    delivery: boolean
-    location: string
-    type: string[]
-    resource: string
-    desc: string
-}
+// 表单数据
+const form = reactive({
+    modelName: '',
+    modelType: '',
+    modelVersion: '',
+    modelFile: null as File | null, // 文件对象初始化为 null
+});
 
-const formSize = ref<ComponentSize>('default')
-const ruleFormRef = ref<FormInstance>()
-const ruleForm = reactive<RuleForm>({
-    name: 'Hello',
-    region: '',
-    count: '',
-    date1: '',
-    date2: '',
-    delivery: false,
-    location: '',
-    type: [],
-    resource: '',
-    desc: '',
-})
+// 文件列表
+const fileList = ref<File[]>([]);
 
-const locationOptions = ['Home', 'Company', 'School']
+// 表单校验规则
+const rules = reactive({
+    modelName: [
+        { required: true, message: '请输入模型名称', trigger: 'blur' },
+    ],
+    modelType: [
+        { required: true, message: '请输入模型类型', trigger: 'blur' },
+    ],
+    modelVersion: [
+        { required: true, message: '请输入模型版本', trigger: 'blur' },
+    ],
+    modelFile: [
+        { required: true, message: '请上传模型文件', trigger: 'change' },
+    ],
+});
 
-const rules = reactive<FormRules<RuleForm>>({
-    name: [
-        { required: true, message: 'Please input Activity name', trigger: 'blur' },
-        { min: 3, max: 5, message: 'Length should be 3 to 5', trigger: 'blur' },
-    ],
-    region: [
-        {
-            required: true,
-            message: 'Please select Activity zone',
-            trigger: 'change',
-        },
-    ],
-    count: [
-        {
-            required: true,
-            message: 'Please select Activity count',
-            trigger: 'change',
-        },
-    ],
-    date1: [
-        {
-            type: 'date',
-            required: true,
-            message: 'Please pick a date',
-            trigger: 'change',
-        },
-    ],
-    date2: [
-        {
-            type: 'date',
-            required: true,
-            message: 'Please pick a time',
-            trigger: 'change',
-        },
-    ],
-    location: [
-        {
-            required: true,
-            message: 'Please select a location',
-            trigger: 'change',
-        },
-    ],
-    type: [
-        {
-            type: 'array',
-            required: true,
-            message: 'Please select at least one activity type',
-            trigger: 'change',
-        },
-    ],
-    resource: [
-        {
-            required: true,
-            message: 'Please select activity resource',
-            trigger: 'change',
-        },
-    ],
-    desc: [
-        { required: true, message: 'Please input activity form', trigger: 'blur' },
-    ],
-})
+const formRef = ref();
 
-const submitForm = async (formEl: FormInstance | undefined) => {
-    if (!formEl) return
-    await formEl.validate((valid, fields) => {
+const beforeUpload = (file: File) => {
+    form.modelFile = file;
+    return false; // 阻止自动上传
+};
+
+const handleChange = (file: any, fileList: any[]) => {
+    form.modelFile = file.raw; // 更新文件对象
+};
+
+const onSubmit = async () => {
+    formRef.value.validate(async (valid: boolean) => {
         if (valid) {
-            console.log('submit!')
+            if (form.modelFile) {
+                const formData = new FormData();
+                formData.append('modelName', form.modelName);
+                formData.append('modelType', form.modelType);
+                formData.append('modelVersion', form.modelVersion);
+                formData.append('modelFile', form.modelFile);
+
+                try {
+                    const response = await axios.post('/api/models', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    if (response.status === 200) {
+                        ElMessage.success('提交成功');
+                        onReset();
+                    } else {
+                        ElMessage.error('提交失败');
+                    }
+                } catch (error) {
+                    ElMessage.error('提交失败，请稍后重试');
+                    console.error(error);
+                }
+            } else {
+                ElMessage.error('请上传模型文件');
+            }
         } else {
-            console.log('error submit!', fields)
+            ElMessage.error('请完善表单信息');
+            return false;
         }
-    })
-}
+    });
+};
 
-const resetForm = (formEl: FormInstance | undefined) => {
-    if (!formEl) return
-    formEl.resetFields()
-}
-
-const options = Array.from({ length: 10000 }).map((_, idx) => ({
-    value: `${idx + 1}`,
-    label: `${idx + 1}`,
-}))
+const onReset = () => {
+    formRef.value.resetFields();
+    fileList.value = []; // 清空文件列表
+    form.modelFile = null; // 重置文件对象
+};
 </script>
+
 
 <style scoped>
 .el-main {
     padding: 80px 100px;
+}
+
+.el-upload__tip {
+    margin-left: 15px;
 }
 </style>
