@@ -74,11 +74,11 @@ const onSubmit = () => {
     formRef.value.validate(async (valid: boolean) => {
         if (valid) {
             try {
-                const response = await axios.post('/api/users', {
+                const response = await axios.post('/manager/add_user', {
                     userName: form.userName,
                     userPhoneNumber: form.userPhoneNumber,
                     userAge: form.userAge,
-                    userPassword: form.userPassword,
+                    password: form.userPassword,
                 });
                 if (response.status === 200) {
                     ElMessage.success('提交成功');

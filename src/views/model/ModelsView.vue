@@ -58,14 +58,11 @@ const tableData = ref([]); // 表格数据
 // 获取模型信息
 const fetchModelData = async (page: number) => {
     try {
-        const response = await axios.get('/api/models', {
-            params: {
-                page,
-                pageSize: pageSize.value,
-            },
+        const response = await axios.post('/manager/show_model', {
+            page,
+            pageSize: pageSize.value,
         });
 
-        // 假设返回数据格式为 { data: [...], total: 300 }
         tableData.value = response.data.data;
         total.value = response.data.total;
     } catch (error) {

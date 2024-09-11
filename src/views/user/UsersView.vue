@@ -12,8 +12,8 @@
                     <el-table-column prop="userID" label="ID" width="120" />
                     <el-table-column prop="username" label="用户名" width="140" />
                     <el-table-column prop="userPhoneNumber" label="手机号" />
-                    <el-table-column prop="userPassword" label="密码" />
-                    <el-table-column label="查看用户">
+                    <el-table-column prop="password" label="密码" />
+                    <el-table-column label="修改信息">
                         <template v-slot="scope">
                             <el-button type="primary" link @click="showUser(scope.row.userID)">查看</el-button>
                         </template>
@@ -41,7 +41,7 @@
                 <el-input v-model="user.userPhoneNumber" :disabled="!isEditing"></el-input>
             </el-form-item>
             <el-form-item label="密码" prop="password">
-                <el-input v-model="user.userPassword" :disabled="!isEditing"></el-input>
+                <el-input v-model="user.password" :disabled="!isEditing"></el-input>
             </el-form-item>
 
             <el-form-item>
@@ -85,18 +85,16 @@ const user = ref({
     userID: '123',
     username: '123',
     userPhoneNumber: '',
-    userPassword: ''
+    password: ''
 });
 
 
 // 获取用户信息
 const fetchUserData = async (page: number) => {
     try {
-        const response = await axios.get('/users', {
-            params: {
-                page,
-                pageSize: pageSize.value,
-            },
+        const response = await axios.post('/manager/user', {
+            page,
+            pageSize: pageSize.value,
         });
 
         // 假设返回数据格式为 { data: [...], total: 300 }
@@ -122,7 +120,9 @@ onMounted(() => {
 
 const showUser = async (id: number) => {
     try {
-        const response = await axios.get(`/api/user?id=${id}`);
+        const response = await axios.post('/manager/screen_user', {
+            userID: id
+        });
         user.value = response.data.data;
 
         document.querySelector('.modal').classList.remove('hidden');
@@ -155,13 +155,14 @@ const saveChanges = async () => {
     formRef.value.validate(async (valid: boolean) => {
         if (valid) {
             try {
-                const response = await axios.post('/updateUser', {
+                const response = await axios.post('/manager/modify_user', {
                     id: user.value.userID,
-                    username: user.value.username,
+                    userName: user.value.username,
                     userPhoneNumber: user.value.userPhoneNumber,
-                    password: user.value.userPassword
+                    password: user.value.password
                 })
                 isEditing.value = false;
+                ElMessage.success('修改成功');
             } catch (error) {
                 ElMessage.error('修改失败');
             }
@@ -169,13 +170,16 @@ const saveChanges = async () => {
             ElMessage.error('格式错误，请修正输入信息');
         }
     });
+    fetchUserData(currentPage.value);
 };
 
 // 取消编辑
 const cancelEdit = async () => {
     // 重新获取或重置用户数据
     try {
-        const response = await axios.get(`/api/user?id=${user.value.userID}`);
+        const response = await axios.post('/manager/screen_user', {
+            userID: user.value.userID
+        });
         user.value = response.data.data;
     } catch (error) {
         ElMessage.error('获取用户信息失败');
@@ -186,7 +190,7 @@ const cancelEdit = async () => {
 // 删除用户
 const deleteUser = async () => {
     try {
-        await axios.delete(`/api/user/${user.value.userID}`);
+        await axios.delete(`/manager/delete_user/${user.value.userID}`);
         ElMessage.success('用户删除成功');
         // 刷新用户列表
         fetchUserData(currentPage.value);

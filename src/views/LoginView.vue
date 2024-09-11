@@ -24,7 +24,7 @@
 </template>
 
 <script lang="ts" setup>
-import axios from 'axios';
+import axios from '@/stores/axios';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -44,8 +44,8 @@ const handleLogin = async () => {
             const token = response.data.token; // 获取后端返回的 token
             if (token) {
                 localStorage.setItem('token', token); // 将 token 存储在 localStorage 中
-                ElMessage.success('登录成功'); // 使用 ElMessage 显示成功信息
-                router.push('/home'); // 跳转到主页或其他页面
+                ElMessage.success('登录成功'); 
+                router.push('/users'); // 跳转到主页
             } else {
                 ElMessage.error('登录失败，未收到令牌');
             }
